@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "run": "deno run --allow-net server.js"
+  },
+  "deploy": {
+    "project": "0267f1d2-bfaf-4b54-a7ff-ef599c997d13",
+    "exclude": [
+      "**/node_modules"
+    ],
+    "include": [".env"],
+    "entrypoint": "server.js"
+  }
+}
