@@ -1,85 +1,75 @@
-import { load } from "https://deno.land/std@0.223.0/dotenv/mod.ts";
-import { Application, Router } from "https://deno.land/x/oak@v7.7.0/mod.ts";
-import { oakCors } from "https://deno.land/x/cors/mod.ts";
-
-import {
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { initializeApp } = require("firebase/app");
+const {
   getFirestore,
   collection,
   getDocs,
   addDoc,
-} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+} = require("firebase/firestore");
 
-const env = await load();
-
+dotenv.config();
 
 const firebaseConfig = {
-  apiKey: env["API_KEY"],
-  authDomain: env["AUTH_DOMAIN"],
-  databaseURL: env["DATABASE_URL"],
-  projectId: env["PROJECT_ID"],
-  storageBucket: env["STORAGE_BUCKET"],
-  messagingSenderId: env["MESSAGING_SENDER_ID"],
-  appId: env["APP_ID"],
-  measurementId: env["MEASUREMENT_ID"],
+  apiKey: process.env.API_KEY,
+  authDomain: process.env.AUTH_DOMAIN,
+  databaseURL: process.env.DATABASE_URL,
+  projectId: process.env.PROJECT_ID,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID,
+  appId: process.env.APP_ID,
+  measurementId: process.env.MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
-
 const db = getFirestore(app);
 
-const router = new Router();
-const DenoApp = new Application();
+const expressApp = express();
+const port = 8000;
 
-DenoApp.use(oakCors({ origin: "*" }));
+expressApp.use(cors());
+expressApp.use(express.json());
 
-router
-  .get("/", (ctx) => {
-    ctx.response.body = "Hello from our API!! 🦕";
-  })
-  .get("/question", async (ctx) => {
-    try {
-      const test = await getDocs(collection(db, "questions"));
-      const data = test.docs.map((doc) => doc.data());
-      ctx.response.body = data;
-    } catch (e) {
-      console.log(e);
-      ctx.response.body = "Something went wrong :(";
-    }
-  })
-  .post("/question", async (ctx) => {
-    try {
-      const { title, difficulty, link, email, uid, topics, time } = await ctx.request.body("json").value;
-      const QuestionDetails = {
-        title,
-        difficulty,
-        link,
-        email,
-        uid,
-        topics,
-        time
-      };
-      if (QuestionDetails) {
-        await addDoc(collection(db, "questions"), QuestionDetails);
-        ctx.response.body = "Question added";
-      } else {
-        ctx.response.body = "Question not added";
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  });
-  
-
-DenoApp.use(router.routes());
-DenoApp.use(router.allowedMethods());
-
-DenoApp.addEventListener("listen", () => {
-  console.log("App is running on http://localhost:8000");
+expressApp.get("/", (req, res) => {
+  res.send("Hello from our API!! 🦕");
 });
 
-DenoApp.use();
+expressApp.get("/question", async (req, res) => {
+  try {
+    const snapshot = await getDocs(collection(db, "questions"));
+    const data = snapshot.docs.map((doc) => doc.data());
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong :(");
+  }
+});
 
-DenoApp.listen({ port: 8000 });
+expressApp.post("/question", async (req, res) => {
+  try {
+    const { title, difficulty, link, email, uid, topics, time } = req.body;
+    const QuestionDetails = {
+      title,
+      difficulty,
+      link,
+      email,
+      uid,
+      topics,
+      time,
+    };
+    if (QuestionDetails) {
+      await addDoc(collection(db, "questions"), QuestionDetails);
+      res.send("Question added");
+    } else {
+      res.send("Question not added");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Something went wrong :(");
+  }
+});
 
-
+expressApp.listen(port, () => {
+  console.log(`App is running on http://localhost:${port}`);
+});
