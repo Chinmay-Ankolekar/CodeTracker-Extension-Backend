@@ -35,17 +35,6 @@ expressApp.get("/", (req, res) => {
   res.send("Hello from our API!! 🦕");
 });
 
-expressApp.get("/question", async (req, res) => {
-  try {
-    const snapshot = await getDocs(collection(db, "questions"));
-    const data = snapshot.docs.map((doc) => doc.data());
-    res.json(data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Something went wrong :(");
-  }
-});
-
 expressApp.post("/question", async (req, res) => {
   try {
     const { title, difficulty, link, email, uid, topics, time } = req.body;
